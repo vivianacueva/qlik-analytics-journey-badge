@@ -1,0 +1,22 @@
+# Datos y binarios de Qlik (no deben subirse: pesan mucho y pueden contener datos sensibles)
+*.qvd
+*.qvw
+*.qvf
+
+# Logs de carga
+*.log
+
+# Archivos temporales de Qlik
+~*.tmp
+QvdTableHeader.bin
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Entornos y configuraciones locales
+.env
+*.local
+
+# Carpeta de datos reales (si usas /data solo para muestras anonimizadas)
+data/raw/
