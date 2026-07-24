@@ -1,99 +1,45 @@
-# 📊 Qlik Analytics Journey — Modelo de Datos y Arquitectura en 3 Capas
+# Qlik Analytics Journey — Badge Qlik Cloud Analyze
 
-Proyecto desarrollado como parte de la ruta oficial **Qlik Analytics Journey Badge**, dentro del programa de acceso estudiantil de mi Máster en Business Intelligence (UNIR). El objetivo es construir un modelo de datos robusto en Qlik Sense/Qlik Cloud siguiendo buenas prácticas de arquitectura: separación en capas, trazabilidad y un modelo en estrella optimizado para análisis.
+Repositorio de práctica y documentación de mi recorrido hacia el badge **Qlik Cloud Analyze** (módulo *Data Modeling with Qlik Cloud Analytics*), dentro de la suscripción Qlik Student Learning.
 
-> 🎓 **Contexto:** Proyecto de portafolio — Analista de Datos / Ingeniera Industrial especializada en BI (Qlik Sense, Power BI, SQL, R, Python).
+## 🎯 Objetivo
 
----
+Registrar el proceso de construcción de un modelo de datos en Qlik Sense: desde la carga de datos hasta un esquema en estrella optimizado, documentando decisiones técnicas y avances por módulo.
 
-## 🎯 Objetivo del proyecto
+## 🏗️ Arquitectura del modelo
 
-- Diseñar una arquitectura de datos en **3 capas (Extract → Transform → Business)** siguiendo las buenas prácticas recomendadas por Qlik.
-- Construir un **modelo en estrella (Star Schema)** limpio, sin relaciones circulares ni sincretismos no deseados.
-- Documentar el flujo completo de datos, desde el origen hasta el dashboard final, como evidencia de proceso analítico profesional.
+- **3 capas QVD**: extracción → transformación → carga final (Extract / Transform / Load layers)
+- **Esquema en estrella** como resultado final del modelado
+- Capturas de pantalla del Data Model Viewer y Debugger en `/docs/screenshots`
 
----
+## 🧭 Estructura del badge (5 módulos)
 
-## 🏗️ Arquitectura de datos: modelo de 3 capas QVD
+| # | Módulo | Estado |
+|---|--------|--------|
+| 1 | Cargando datos (conexión y carga) | ✅ En curso / avanzado |
+| 2 | Transformación de datos | ⏳ Pendiente |
+| 3 | Creando el master calendar | ⏳ Pendiente |
+| 4 | Estructuración del modelo | ⏳ Pendiente |
+| 5 | Finalización de los datos | ⏳ Pendiente |
 
-El proyecto sigue el patrón estándar de capas QVD, que separa responsabilidades y mejora el rendimiento y mantenibilidad de la carga:
+### Módulo 1 — Cargando datos (detalle de avance)
 
-| Capa | Script | Función |
-|------|--------|---------|
-| **1. Extract (Extracción)** | `01_extract_layer.qvs` | Conecta con las fuentes originales (BD, Excel, API, etc.) y genera QVDs "en crudo", sin transformar. Aísla el modelo de cambios en el origen. |
-| **2. Transform (Transformación)** | `02_transform_layer.qvs` | Limpieza, tipado, renombrado de campos, cálculos intermedios y resolución de calidad de datos. Genera QVDs listos para modelar. |
-| **3. Business / Star Schema (Negocio)** | `03_business_layer.qvs` | Construye el modelo final: tablas de hechos y dimensiones, claves optimizadas, campos calculados de negocio. Es la capa que consume la app de análisis. |
-
-**Diagrama del flujo de datos:**
-
-<!-- 📌 MARCADOR: Pega aquí tu captura del flujo de las 3 capas -->
-![Flujo de datos](docs/images/data_flow.png)
-
----
-
-## ⭐ Modelo en estrella (Star Schema)
-
-El modelo final sigue un esquema en estrella clásico: una tabla de hechos central conectada a dimensiones desnormalizadas, evitando relaciones many-to-many sin resolver y minimizando el uso de campos sintéticos.
-
-**Captura del Data Model Viewer:**
-
-<!-- 📌 MARCADOR: Pega aquí tu captura del Data Model Viewer de Qlik -->
-![Data Model Viewer](docs/images/data_model_viewer.png)
-
-**Tablas del modelo:**
-
-<!-- 📌 MARCADOR: completa con tus tablas reales -->
-- **Tabla de hechos:** `FactVentas` — [describe grano y métricas clave]
-- **Dimensiones:**
-  - `DimFecha` — [descripción]
-  - `DimProducto` — [descripción]
-  - `DimCliente` — [descripción]
-  - `Dim...` — [descripción]
-
----
-
-## ✅ Buenas prácticas aplicadas
-
-- [x] Separación estricta entre capas de extracción, transformación y negocio.
-- [x] Uso de `QUALIFY`/`UNQUALIFY` y renombrado explícito de campos para evitar joins no intencionados.
-- [x] Claves primarias limpias, sin campos sintéticos innecesarios.
-- [x] Comentarios en el código de carga (`.qvs`) explicando cada bloque.
-- [x] Variables de entorno/rutas parametrizadas al inicio del script (sin rutas hardcodeadas dispersas).
-- [x] Nomenclatura consistente en tablas y campos (`Dim`, `Fact`, `PascalCase`).
-
----
+- **Desde base de datos (SQL Server, conexión `ABC`)**: tablas `Orders`, `OrderDetails` (sección `DB_Measures`) y `Customers`, `Divisions` (sección `DB_Dimensions`)
+- **Desde Data Catalog**: archivo Excel (`Employees`), Excel multi-hoja (`Teams`), CSV (`Offices`), archivo de ancho fijo (`Org_structure`), inclusión de script externo `.qvs` (generación de emails)
+- Uso de variables (`vFileLocation`, `vDBConn`) y *find & replace* para desacoplar rutas/conexiones del script
 
 ## 📂 Estructura del repositorio
 
 ```
-qlik-analytics-journey/
-├── README.md
-├── scripts/
-│   ├── 01_extract_layer.qvs
-│   ├── 02_transform_layer.qvs
-│   └── 03_business_layer.qvs
-├── docs/
-│   ├── images/
-│   │   ├── data_model_viewer.png
-│   │   ├── star_schema.png
-│   │   └── data_flow.png
-│   └── architecture.md
-└── data/
-    └── sample/
+/scripts            → scripts exportados del Data Load Editor, uno por módulo
+/docs/screenshots    → capturas de apoyo (Data Model Viewer, debugger, etc.)
+README.md
+.gitignore
 ```
 
----
+## 🛠️ Herramientas
 
-## 🛠️ Tecnologías utilizadas
-
-`Qlik Sense` · `Qlik Cloud` · `Data Modeling` · `Star Schema` · `SQL`
+Qlik Sense (Qlik Cloud), Git / GitHub, Git Bash
 
 ---
-
-## 👩‍💻 Autora
-
-**Viviana** — Analista de Datos e Ingeniera Industrial
-📍 Madrid, España
-🔗 [LinkedIn](#) · [Portafolio](#)
-
-<!-- 📌 MARCADOR: añade tus enlaces reales -->
+*Actualizado a medida que avanzo en cada módulo del learning path.*
