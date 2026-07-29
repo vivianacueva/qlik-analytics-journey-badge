@@ -9,14 +9,14 @@ Registrar el proceso de construcción de un modelo de datos en Qlik Sense: desde
 ## 🏗️ Arquitectura del modelo
 
 - **3 capas QVD**: extracción → transformación → carga final (Extract / Transform / Load layers)
-- **Esquema en estrella** como resultado final del modelado
+- **Esquema en copo de nieve (snowflake schema)** como resultado final del modelado
 - Capturas de pantalla del Data Model Viewer y Debugger en `/docs/screenshots`
 
 ## 🧭 Estructura del badge (5 módulos)
 
 | # | Módulo | Estado |
 |---|--------|--------|
-| 1 | Cargando datos (conexión y carga) | ✅ En curso / avanzado |
+| 1 | Cargando datos (conexión y carga) | ✅ Finalizado |
 | 2 | Transformación de datos | ⏳ Pendiente |
 | 3 | Creando el master calendar | ⏳ Pendiente |
 | 4 | Estructuración del modelo | ⏳ Pendiente |

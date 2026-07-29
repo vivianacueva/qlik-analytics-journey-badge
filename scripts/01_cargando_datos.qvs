@@ -1,0 +1,209 @@
+///$tab Main
+SET ThousandSep=',';
+SET DecimalSep='.';
+SET MoneyThousandSep=',';
+SET MoneyDecimalSep='.';
+SET MoneyFormat='$ ###0.00;-$ ###0.00';
+SET TimeFormat='h:mm:ss TT';
+SET DateFormat='M/D/YYYY';
+SET TimestampFormat='M/D/YYYY h:mm:ss[.fff] TT';
+SET FirstWeekDay=6;
+SET BrokenWeeks=1;
+SET ReferenceDay=0;
+SET FirstMonthOfYear=1;
+SET CollationLocale='en-US';
+SET CreateSearchIndexOnReload=1;
+SET MonthNames='Jan;Feb;Mar;Apr;May;Jun;Jul;Aug;Sep;Oct;Nov;Dec';
+SET LongMonthNames='January;February;March;April;May;June;July;August;September;October;November;December';
+SET DayNames='Mon;Tue;Wed;Thu;Fri;Sat;Sun';
+SET LongDayNames='Monday;Tuesday;Wednesday;Thursday;Friday;Saturday;Sunday';
+SET NumericalAbbreviation='3:k;6:M;9:G;12:T;15:P;18:E;21:Z;24:Y;-3:m;-6:μ;-9:n;-12:p;-15:f;-18:a;-21:z;-24:y';
+
+//creating the variable to define the connection to the data catalog in Qlik Cloud
+SET vFileLocation = lib://DataFiles/;
+
+//creating the variable to define our database connection to MS SQL Server
+SET vDBConn='ABC';
+
+
+
+///$tab Sandbox
+
+// // se inserta la tabla tInline MANUALMENTE
+// tInline:
+// LOAD 
+// 	* 
+// INLINE 
+// [
+//     X	|	Y		|       Z	        | Date			
+//     1	|	Apple		|	Fruit		| '04/01/2025'
+//     2	|	Peach		|	Fruit		| '03/30/2025'	
+//     3	|	Celery		|	Vegetable	| '03/02/2025'	
+//     4	|	Potato		|	Vegetable	| '04/02/2025'	
+//     5	|	Cheese		|	Dairy		| '03/28/2025'	
+//     6	|	Tofu		|	Mystery		| '04/03/2025'	
+//     7	|	Eggplant	|	Vegetable	| '03/05/2025'	
+//     8	|	Tomato		|	Fruit		| '04/04/2025'	
+//     9	|	Avocado		| 	Fruit		| '03/31/2025'		
+// ] (delimiter is '|'); 
+
+
+// // se inserta una tabla que es RESIDENTE de la tabla tInline, porque importa todos sus campos
+// tResident:
+// LOAD
+//     X AS ID,
+//     Y AS Item,
+//     Z AS Type,
+//     Date as DeliveryDate
+//  RESIDENT tInline;
+ 
+// // se inserta una tabla que genera los datos usando AUTOGENERATE
+// tAutoGen:
+// Load
+//   RowNo() as RowID, // genera números de índice del 1 al 3
+//   today() as TodaysDate //repite la fecha de hoy para las tres filas
+// AutoGenerate(3); //se crea una tabla con 3 filas 
+
+// exit Script //Esta instrucción finaliza la ejecución del script. Solo necesitamos este script con fines demostrativos y, una vez completado, podemos finalizarlo sin afectar la carga de datos en las demás secciones.  
+
+
+
+
+
+///$tab DB_Measures
+//loading Orders and OrdeDetails tables from ABC database
+LIB CONNECT TO $(vDBConn);
+
+Orders:
+LOAD OrderID, 
+	CustomerID, 
+	EmployeeID, 
+	ShipperID, 
+	FreightWeight, 
+	OrderDate;
+
+SELECT OrderID,
+	CustomerID,
+	EmployeeID,
+	ShipperID,
+	FreightWeight,
+	OrderDate
+FROM orders;
+
+//LIB CONNECT TO 'ABC'; - se elimina porque ya se conecto arriba
+
+OrderDetails:
+LOAD OrderID, 
+	LineNo, 
+	ProductID, 
+	UnitPrice, 
+	Quantity, 
+	Discount;
+
+SELECT OrderID,
+	"LineNo",
+	ProductID,
+	UnitPrice,
+	Quantity,
+	Discount
+FROM orderdetails;
+
+
+///$tab DB_Dimensions
+//loading Customers and Divisions tables from ABC database
+LIB CONNECT TO $(vDBConn);
+
+Customers:
+LOAD CustomerID, 
+	CompanyName, 
+	ContactName, 
+	City, 
+	Country, 
+	DivisionID, 
+	Address, 
+	Fax, 
+	Phone, 
+	PostalCode, 
+	StateProvince;
+
+SELECT CustomerID,
+	CompanyName,
+	ContactName,
+	City,
+	Country,
+	DivisionID,
+	Address,
+	Fax,
+	Phone,
+	PostalCode,
+	StateProvince
+FROM customers;
+
+Divisions:
+LOAD DivisionID, 
+	DivisionName;
+
+SELECT DivisionID,
+	DivisionName
+FROM divisions;
+
+
+///$tab File_Dimensions
+//Employees table load
+Employees:
+LOAD
+    EmpID as EmployeeID,
+    "First Name" as FirstName,
+    "Last Name" as LastName,
+    DateOfBirth,
+    StartDate,
+    EndDate,
+    OfficeID,
+    JobTitle
+FROM [$(vFileLocation)ABC_employees.xlsx]
+(ooxml, embedded labels, table is Employees);
+
+//EmployeeTeam and Teams table load
+EmployeeTeam:
+LOAD
+    EmpID as EmployeeID,
+    TeamID
+FROM [$(vFileLocation)ABC_teams.xlsx]
+(ooxml, embedded labels, table is employee_team);
+
+Team:
+LOAD
+    TeamID,
+    Team
+FROM [$(vFileLocation)ABC_teams.xlsx]
+(ooxml, embedded labels, table is team);
+
+//Offices table load csv
+Offices: 
+LOAD
+    OfficeID,
+    OfficeAddress,
+    OfficeCity,
+    OfficeCountry,
+    OfficeFax,
+    OfficePhone,
+    OfficePostalCode,
+    OfficeStateProvince
+FROM [$(vFileLocation)ABC_offices.csv]
+(txt, codepage is 28591, embedded labels, delimiter is ',', msq);
+
+//OrgStructure table load archivo ancho fijo 
+OrgStructure:
+LOAD
+    EmpID AS EmployeeID,
+    ReportsTo AS ManagerID
+FROM [$(vFileLocation)ABC_org_structure.fix]
+(txt, codepage is 28591, embedded labels, delimiter is spaces, msq);
+
+// Creacion de una direccion de email para cada empleado, carga de un script 
+
+$(Must_Include=[$(vFileLocation)ABC_GenEmpEmailAddresses.qvs]);
+
+
+
+
