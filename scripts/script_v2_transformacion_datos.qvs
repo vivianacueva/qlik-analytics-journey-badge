@@ -25,62 +25,29 @@ SET vFileLocation = lib://DataFiles/;
 //creating the variable to define our database connection to MS SQL Server
 SET vDBConn='ABC';
 
-
-
-///$tab Sandbox
-
-// // se inserta la tabla tInline MANUALMENTE
-// tInline:
-// LOAD 
-// 	* 
-// INLINE 
-// [
-//     X	|	Y		|       Z	        | Date			
-//     1	|	Apple		|	Fruit		| '04/01/2025'
-//     2	|	Peach		|	Fruit		| '03/30/2025'	
-//     3	|	Celery		|	Vegetable	| '03/02/2025'	
-//     4	|	Potato		|	Vegetable	| '04/02/2025'	
-//     5	|	Cheese		|	Dairy		| '03/28/2025'	
-//     6	|	Tofu		|	Mystery		| '04/03/2025'	
-//     7	|	Eggplant	|	Vegetable	| '03/05/2025'	
-//     8	|	Tomato		|	Fruit		| '04/04/2025'	
-//     9	|	Avocado		| 	Fruit		| '03/31/2025'		
-// ] (delimiter is '|'); 
-
-
-// // se inserta una tabla que es RESIDENTE de la tabla tInline, porque importa todos sus campos
-// tResident:
-// LOAD
-//     X AS ID,
-//     Y AS Item,
-//     Z AS Type,
-//     Date as DeliveryDate
-//  RESIDENT tInline;
- 
-// // se inserta una tabla que genera los datos usando AUTOGENERATE
-// tAutoGen:
-// Load
-//   RowNo() as RowID, // genera números de índice del 1 al 3
-//   today() as TodaysDate //repite la fecha de hoy para las tres filas
-// AutoGenerate(3); //se crea una tabla con 3 filas 
-
-// exit Script //Esta instrucción finaliza la ejecución del script. Solo necesitamos este script con fines demostrativos y, una vez completado, podemos finalizarlo sin afectar la carga de datos en las demás secciones.  
-
-
-
-
-
 ///$tab DB_Measures
 //loading Orders and OrdeDetails tables from ABC database
 LIB CONNECT TO $(vDBConn);
 
 Orders:
 LOAD OrderID, 
-	CustomerID, 
-	EmployeeID, 
+// 	OrderID as OrderRecordCounter,
+	1 as OrderRecordCounter, // agregamos contador 
+	CustomerID,
+    CustomerID as ActiveCustomerID,
+	EmployeeID,
+    // se crea esto para identificar quien de los empleados es vendedor con el flag en la tabla employees
+    EmployeeID as SalesPersonID,
 	ShipperID, 
-	FreightWeight, 
-	OrderDate;
+	FreightWeight,
+    // se crean categorias de peso de carga con IF()
+    IF(FreightWeight<30, 'Light', 
+    	if(FreightWeight >= 30 and FreightWeight < 70, 'Medium', 'Heavy'))
+        AS FreightWeightCategory,
+    // Se crean clases de peso de carga con CLASS() con intervalos de 10 y usamos replace para no tener nombres de intervalos largos
+    '>=' & REPLACE(Class(FreightWeight, 10, 'FrWeight'),'<= FrWeight <','<') as FreightClass,
+    Date(Floor(OrderDate)) AS OrderDate // Floor () elimina el elemento de tiempo de OrderDate
+ where OrderDate < now(); // para que los datos sean hasta la fecha de carga actual 
 
 SELECT OrderID,
 	CustomerID,
@@ -93,12 +60,19 @@ FROM orders;
 //LIB CONNECT TO 'ABC'; - se elimina porque ya se conecto arriba
 
 OrderDetails:
+Load *,
+	Window(SUM(LineSalesAmount), OrderID) as OrderSalesAmt;
+
 LOAD OrderID, 
 	LineNo, 
 	ProductID, 
-	UnitPrice, 
+	UnitPrice,
+    UnitPrice * Quantity * (1 - Discount) AS LineSalesAmount,
 	Quantity, 
-	Discount;
+	Discount
+    // El objetivo de este paso es filtrar la tabla OrderDetails indirectamente usando la función Exists(campo_en_memoria, campo_origen)
+where Exists(OrderID,OrderID) // Para cada fila que lee de la base de datos origen, Qlik comprueba si el OrderID entrante existe en la lista de OrderID cargados previamente.
+    ;
 
 SELECT OrderID,
 	"LineNo",
@@ -108,6 +82,13 @@ SELECT OrderID,
 	Discount
 FROM orderdetails;
 
+// creamos esta tabla para agrupar OrderDetails
+OrderHeader:
+Load
+	OrderID,
+    SUM(LineSalesAmount) AS OrderSalesAmount
+Resident OrderDetails
+Group by OrderID;
 
 ///$tab DB_Dimensions
 //loading Customers and Divisions tables from ABC database
@@ -153,13 +134,17 @@ FROM divisions;
 Employees:
 LOAD
     EmpID as EmployeeID,
-    "First Name" as FirstName,
-    "Last Name" as LastName,
+    //"First Name" as FirstName,
+    //"Last Name" as LastName,
+    "First Name" &' '& "Last Name" AS FullName,
     DateOfBirth,
     StartDate,
     EndDate,
     OfficeID,
-    JobTitle
+    JobTitle,
+    // flag que funciona asi: Busca el campo 'EmpID' en la tabla 'Employees' 
+    //y lo compara con el campo 'SalesPersonID' en la tabla 'Orders'
+    IF(Exists(SalesPersonID, EmpID),1,0) as SalesPersonFlag
 FROM [$(vFileLocation)ABC_employees.xlsx]
 (ooxml, embedded labels, table is Employees);
 
