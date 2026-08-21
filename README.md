@@ -45,7 +45,7 @@ Registrar el proceso de construcción de un modelo de datos en Qlik Sense: desde
 ## 📂 Estructura del repositorio
 
 ```
-/scripts            → scripts exportados del Data Load Editor, uno por módulo
+/scripts            → scripts exportados del Data Load Editor (se irá actualizando sobre el mismo script)
 /docs/screenshots    → capturas de apoyo (Data Model Viewer, debugger, etc.)
 README.md
 .gitignore
