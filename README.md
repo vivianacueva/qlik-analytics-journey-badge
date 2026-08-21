@@ -4,7 +4,7 @@ Repositorio de práctica y documentación de mi recorrido hacia el badge **Qlik 
 
 ## 🎯 Objetivo
 
-Registrar el proceso de construcción de un modelo de datos en Qlik Sense: desde la carga de datos hasta un esquema en estrella optimizado, documentando decisiones técnicas y avances por módulo.
+Registrar el proceso de construcción de un modelo de datos en Qlik Sense: desde la carga de datos hasta un esquema en copo de nieve optimizado, documentando decisiones técnicas y avances por módulo.
 
 ## 🏗️ Arquitectura del modelo
 
@@ -12,12 +12,16 @@ Registrar el proceso de construcción de un modelo de datos en Qlik Sense: desde
 - **Esquema en copo de nieve (snowflake schema)** como resultado final del modelado
 - Capturas de pantalla del Data Model Viewer y Debugger en `/docs/screenshots`
 
+### Vista del Modelo de Datos Actual
+
+![Modelo de Datos de Qlik](docs/screenshots/data_model_viewer.png)
+
 ## 🧭 Estructura del badge (5 módulos)
 
 | # | Módulo | Estado |
 |---|--------|--------|
 | 1 | Cargando datos (conexión y carga) | ✅ Finalizado |
-| 2 | Transformación de datos | ⏳ En curso |
+| 2 | Transformación de datos | ✅ Finalizado |
 | 3 | Creando el master calendar | ⏳ Pendiente |
 | 4 | Estructuración del modelo | ⏳ Pendiente |
 | 5 | Finalización de los datos | ⏳ Pendiente |
