@@ -22,7 +22,7 @@ Registrar el proceso de construcción de un modelo de datos en Qlik Sense: desde
 |---|--------|--------|
 | 1 | Cargando datos (conexión y carga) | ✅ Finalizado |
 | 2 | Transformación de datos | ✅ Finalizado |
-| 3 | Creando el master calendar | ⏳ Pendiente |
+| 3 | Creando el master calendar | ✅ Finalizado |
 | 4 | Estructuración del modelo | ⏳ Pendiente |
 | 5 | Finalización de los datos | ⏳ Pendiente |
 
@@ -41,6 +41,16 @@ Registrar el proceso de construcción de un modelo de datos en Qlik Sense: desde
   - **Filtrado y segmentación**: Restricción de registros con cláusulas `WHERE` limitantes.
   - **Lógica condicional y flags**: Aplicación de sentencias `IF()` para derivar nuevos atributos y crear marcas/banderas (*flags*) de negocio.
   - **Generación de secuencia y datos**: Uso de funciones de generación de números aleatorios (`Rand()`) y procesamiento secuencial con contadores (`RecNo()`, `RowNo()`, `IterNo()`).
+
+### Módulo 3 — Creando el master calendar
+
+* **Interpretación y formato de fechas**: Diferenciación entre funciones de interpretación y formato para convertir correctamente datos temporales y controlar su representación.
+* **Funciones de fecha y hora**: Manipulación de fechas mediante funciones para extraer y calcular atributos temporales como día, mes, año, semana y trimestre.
+* **Master Calendar**: Diseño de una tabla calendario para generar atributos temporales y facilitar el análisis de los datos por diferentes periodos.
+* **Banderas temporales**: Creación de *flags* para identificar dinámicamente periodos de análisis como **YTD** (*Year-to-Date*) y facilitar su uso en expresiones.
+* **Análisis temporal**: Aplicación de la función **`InYearToDate()`** para identificar registros pertenecientes a periodos acumulados dentro del año.
+* **Calendario fiscal**: Generación de atributos fiscales para adaptar el análisis temporal a periodos definidos por el negocio.
+
 
 ## 📂 Estructura del repositorio
 
