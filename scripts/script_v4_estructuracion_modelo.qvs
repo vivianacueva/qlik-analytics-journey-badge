@@ -25,10 +25,59 @@ SET vFileLocation = lib://DataFiles/;
 //creating the variable to define our database connection to MS SQL Server
 SET vDBConn='ABC';
 
+///$tab Mapping Tables
+// Create a Divisions and Shippers Mapping as a part of the optimization from snow flake to star schema
+
+//OPTIMIZACIÓN: Star Schema
+// MAPPING Divisions → Customers
+
+//Sin la instruccion LIB CONNECT el mapping no funciona
+LIB CONNECT TO $(vDBConn);
+
+Divisions_Map:
+
+MAPPING LOAD DivisionID, 
+	DivisionName;
+
+SELECT DivisionID,
+	DivisionName
+FROM divisions;
+
+//OPTIMIZACIÓN: Star Schema
+// MAPPING Shippers → Orders
+
+Shippers_Map:
+MAPPING LOAD ShipperID, 
+	CompanyName as ShippersName; //usamos este alias para evitar una referencia circular
+
+SELECT ShipperID,
+	CompanyName
+FROM shippers;
+
+// Load UnitCost from Products table.
+ 
+//OPTIMIZACION: Cálculo del margen y del costo de los bienes vendidos en OrderDetails
+
+//En ocasiones es necesario crear una carga de mapeo para importar un campo de otra tabla 
+//con el fin de realizar cálculos en una tabla que no contiene dicho campo
+
+//creamos una carga mapping que importe los valores de UnitCost de la tabla Products
+UnitCost_Map:
+Mapping Load
+	ProductID,
+    UnitCost; 
+SELECT ProductID,
+		UnitCost
+FROM products;
+
+//Posteriormente, se agrega una instrucción ApplyMap a la tabla OrderDetails
+
 ///$tab DB_Measures
 //loading Orders and OrdeDetails tables from ABC database
 LIB CONNECT TO $(vDBConn);
 
+//OPTIMIZACIÓN: Star Schema
+// MAPPING Shippers → Orders
 Orders:
 LOAD OrderID, 
 // 	OrderID as OrderRecordCounter,
@@ -38,7 +87,8 @@ LOAD OrderID,
 	EmployeeID,
     // se crea esto para identificar quien de los empleados es vendedor con el flag en la tabla employees
     EmployeeID as SalesPersonID,
-	ShipperID, 
+	//ShipperID, 
+    ApplyMap('Shippers_Map',ShipperID,'Missing') as ShipperName,
 	FreightWeight,
     // se crean categorias de peso de carga con IF()
     IF(FreightWeight<30, 'Light', 
@@ -57,17 +107,26 @@ SELECT OrderID,
 	OrderDate
 FROM orders;
 
+//OPTIMIZACION: Cálculo del margen y del costo de los bienes vendidos en OrderDetails a través de mapping
+
 //LIB CONNECT TO 'ABC'; - se elimina porque ya se conecto arriba
 
 OrderDetails:
+
 Load *,
+	LineSalesAmount-CostOfGoodsSold as Margin,
+	// Calcula el total de ventas de cada pedido (OrderID) 
+	// y lo mantiene en cada una de sus líneas sin agruparlas.
 	Window(SUM(LineSalesAmount), OrderID) as OrderSalesAmt;
 
 LOAD OrderID, 
 	LineNo, 
+    // clave compuesta para union con la tabla Shipments
+    Autonumber(OrderID &'|'& LineNo) as OrderLineKey ,
 	ProductID, 
 	UnitPrice,
     UnitPrice * Quantity * (1 - Discount) AS LineSalesAmount,
+    ApplyMap('UnitCost_Map', ProductID, 0) * Quantity as CostOfGoodsSold,
 	Quantity, 
 	Discount
     // El objetivo de este paso es filtrar la tabla OrderDetails indirectamente usando la función Exists(campo_en_memoria, campo_origen)
@@ -82,25 +141,76 @@ SELECT OrderID,
 	Discount
 FROM orderdetails;
 
+// OPTIMIZACIÓN: Star Schema
+// JOIN OrderHeader → Orders
+
 // creamos esta tabla para agrupar OrderDetails
-OrderHeader:
+//OrderHeader:
+Left Join (Orders)
+
 Load
 	OrderID,
     SUM(LineSalesAmount) AS OrderSalesAmount
 Resident OrderDetails
 Group by OrderID;
 
+
+
+// OPTIMIZACIÓN: Star Schema
+// JOIN Shipments → OrderDetails
+// Ambas tablas pueden relacionarse mediante OrderLineKey, construida a partir de OrderID + LineNo.
+// Se incorpora ShipmentDate a OrderDetails porque necesitamos la fecha del envío
+// asociada a cada línea de pedido.
+// Resultado: se elimina la tabla Shipments y se simplifica el modelo.
+
+//Shipments:
+Left Join(OrderDetails)
+
+LOAD 
+// Comentamos los sgtes campos para evitar asociaciones con otras tablas
+// 	OrderID, 
+// 	LineNo, 
+// 	CustomerID, 
+// 	EmployeeID, 
+// 	ShipperID, 
+	//ProductID, //campo no necesario porque obtiene valores de OrderDetails
+    //se crea un campo composite key basado en OrderID y LineNo   
+    //utilizando el símbolo de ampersand ( & ).
+    //Usamos autonumber para evitar que la clave sea texto
+    Autonumber(OrderID &'|'& LineNo) as OrderLineKey,
+	Date(Floor(ShipmentDate)) as ShipmentDate; //where exists (OrderID);
+
+SELECT OrderID,
+	"LineNo",
+	CustomerID,
+	EmployeeID,
+	ShipperID,
+	ProductID,
+	ShipmentDate
+FROM shipments;
+
+
+
+
+
+
+
+
+
 ///$tab DB_Dimensions
 //loading Customers and Divisions tables from ABC database
 LIB CONNECT TO $(vDBConn);
 
+//OPTIMIZACIÓN: Star Schema
+// MAPPING Divisions → Customers
 Customers:
 LOAD CustomerID, 
 	CompanyName, 
 	ContactName, 
 	City, 
 	Country, 
-	DivisionID, 
+	//DivisionID, 
+    ApplyMap('Divisions_Map',DivisionID) as DivisionName,
 	Address, 
 	Fax, 
 	Phone, 
@@ -120,13 +230,96 @@ SELECT CustomerID,
 	StateProvince
 FROM customers;
 
-Divisions:
-LOAD DivisionID, 
-	DivisionName;
+//OPTIMIZACIÓN: Star Schema
+// MAPPING Divisions → Customers
+//Se comenta Divisions para usarla en la seccion  Mapping tables
 
-SELECT DivisionID,
-	DivisionName
-FROM divisions;
+// Divisions:
+// LOAD DivisionID, 
+// 	DivisionName;
+
+// SELECT DivisionID,
+// 	DivisionName
+// FROM divisions;
+
+// Loading the Products table.
+
+Products:
+LOAD CategoryID, 
+	ProductID, 
+	ProductName, 
+	QuantityPerUnit, 
+	SupplierID, 
+	ItemCost, 
+	ItemPrice, 
+	UnitsInStock, 
+	UnitsOnOrder, 
+	UnitCost, 
+	UnitPrice as CataloguePrice; //usamos este alias para evitar una synthetic key 
+
+SELECT CategoryID,
+	ProductID,
+	ProductName,
+	QuantityPerUnit,
+	SupplierID,
+	ItemCost,
+	ItemPrice,
+	UnitsInStock,
+	UnitsOnOrder,
+	UnitCost,
+	UnitPrice
+FROM products;
+
+
+//OPTIMIZACIÓN: Star Schema
+// JOIN Categories → Products
+// Products contiene CategoryID, que permite relacionarla con Categories.
+// Se incorpora la información de Categories en Products porque ambas
+// representan atributos de la misma dimensión de producto.
+// Resultado: se elimina una tabla y se simplifica el modelo.
+
+// Loading the Categories table. 
+//Categories: 
+
+Outer Join(Products)
+LOAD CategoryID, 
+	CategoryName, 
+	Description;
+
+SELECT CategoryID,
+	CategoryName,
+	Description
+FROM categories;
+
+//OPTIMIZACIÓN: Star Schema
+// MAPPING Shippers → Orders
+//Se comenta Shippers para usarla en la seccion  Mapping tables
+
+//Loading the Shippers table. 
+// Shippers:
+// LOAD ShipperID, 
+// 	CompanyName as ShippersName; //usamos este alias para evitar una referencia circular
+
+// SELECT ShipperID,
+// 	CompanyName
+// FROM shippers;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ///$tab File_Dimensions
@@ -142,29 +335,70 @@ LOAD
     EndDate,
     OfficeID,
     JobTitle,
+    FileName() as OrigFileSource,
     // flag que funciona asi: Busca el campo 'EmpID' en la tabla 'Employees' 
     //y lo compara con el campo 'SalesPersonID' en la tabla 'Orders'
     IF(Exists(SalesPersonID, EmpID),1,0) as SalesPersonFlag
 FROM [$(vFileLocation)ABC_employees.xlsx]
 (ooxml, embedded labels, table is Employees);
 
+//1. Agregamos EmployeesNew tabla de nuevos empleados para aplicar concatenación automática con employees
+//2. Al agregar un campo distinto (EmploymentType) ya no es concatenación atuomática, sino forzada
+	//y para ello comentamos EmployeesNew y agregamos la función Concatenate()
+
+//EmployeesNew:
+Concatenate(Employees)
+LOAD
+    EmpID as EmployeeID,
+    //"First Name",
+    //"Last Name",
+    "First Name" &' '& "Last Name" AS FullName,
+    DateOfBirth,
+    StartDate,
+    EndDate,
+    OfficeID,
+    JobTitle,
+    FileName() as OrigFileSource,
+    EmploymentType,
+    IF(Exists(SalesPersonID, EmpID),1,0) as SalesPersonFlag
+FROM [lib://DataFiles/ABC_employees_new.xlsx]
+(ooxml, embedded labels, table is Employees);
+
+
+
 //EmployeeTeam and Teams table load
-EmployeeTeam:
+
+//OPTIMIZACIÓN: Star Schema
+// JOIN → Employees
+
+//EmployeeTeam:
+Left Join(Employees)
+
 LOAD
     EmpID as EmployeeID,
     TeamID
 FROM [$(vFileLocation)ABC_teams.xlsx]
 (ooxml, embedded labels, table is employee_team);
 
-Team:
+//OPTIMIZACIÓN: Star Schema
+// JOIN → Employees
+
+//Team:
+Left Join(Employees)
+
 LOAD
     TeamID,
     Team
 FROM [$(vFileLocation)ABC_teams.xlsx]
 (ooxml, embedded labels, table is team);
 
+//OPTIMIZACIÓN: Star Schema
+// JOIN → Employees
+
 //Offices table load csv
-Offices: 
+//Offices: 
+Left Join(Employees)
+
 LOAD
     OfficeID,
     OfficeAddress,
@@ -177,8 +411,14 @@ LOAD
 FROM [$(vFileLocation)ABC_offices.csv]
 (txt, codepage is 28591, embedded labels, delimiter is ',', msq);
 
+
+//OPTIMIZACIÓN: Star Schema
+// JOIN → Employees
+
 //OrgStructure table load archivo ancho fijo 
-OrgStructure:
+//OrgStructure:
+Left Join(Employees)
+
 LOAD
     EmpID AS EmployeeID,
     ReportsTo AS ManagerID
@@ -187,7 +427,53 @@ FROM [$(vFileLocation)ABC_org_structure.fix]
 
 // Creacion de una direccion de email para cada empleado, carga de un script 
 
-$(Must_Include=[$(vFileLocation)ABC_GenEmpEmailAddresses.qvs]);
+left join(Employees) $(Must_Include=[$(vFileLocation)ABC_GenEmpEmailAddresses.qvs]);
+
+
+// Loading the Suppliers  and SupplierBanc table
+
+//usamos qualify para evitar synthetic keys y circular references 
+Qualify *; 
+
+// Unqualify garantiza que el nombre de la tabla no se agregue a los nombres de esos campos,
+// ya que necesitan conectarse con otras tablas y establecer asociaciones
+Unqualify SupplierID, SupplierBandID; 
+
+//OPTIMIZACIÓN: Star Schema
+// JOIN → Products
+
+Suppliers: //no comentamos la tabla Suppliers por el qualify 
+Left Join(Products)
+LOAD
+    Address,
+    City,
+    CompanyName,
+    ContactName,
+    Country,
+    Fax,
+    Phone,
+    PostalCode,
+    SupplierID,
+    SupplierBandID
+FROM [lib://DataFiles/ABC_suppliers.xml]
+(XmlSimple, table is [root/suppliers]);
+
+//Esto garantiza que todas las tablas que siguen en el script 
+//no tengan nombres de tabla añadidos a sus nombres de campo correspondientes
+Unqualify *;
+
+//OPTIMIZACIÓN: Star Schema
+// JOIN → Products
+
+//SupplierBand:
+Left Join(Products)
+LOAD
+    SupplierBandID,
+    SupplierBand
+FROM [lib://DataFiles/ABC_suppliers.xml]
+(XmlSimple, table is [root/supplier_band]);
+
+DROP Fields SupplierID, SupplierBandID;
 
 
 

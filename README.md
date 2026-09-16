@@ -4,17 +4,33 @@ Repositorio de práctica y documentación de mi recorrido hacia el badge **Qlik 
 
 ## 🎯 Objetivo
 
-Registrar el proceso de construcción de un modelo de datos en Qlik Sense: desde la carga de datos hasta un esquema en copo de nieve optimizado, documentando decisiones técnicas y avances por módulo.
+Registrar el proceso de construcción de un modelo de datos en Qlik Sense: desde la carga y transformación de datos hasta la estructuración del modelo, documentando decisiones técnicas y avances por módulo.
 
 ## 🏗️ Arquitectura del modelo
 
-- **3 capas QVD**: extracción → transformación → carga final (Extract / Transform / Load layers)
-- **Esquema en copo de nieve (snowflake schema)** como resultado final del modelado
-- Capturas de pantalla del Data Model Viewer y Debugger en `/docs/screenshots`
+El proyecto utiliza una arquitectura de datos basada en **3 capas QVD**:
 
-### Vista del Modelo de Datos Actual
+- **Extract** → extracción de los datos desde las diferentes fuentes.
+- **Transform** → limpieza, transformación y preparación de los datos.
+- **Load / Analytics** → carga final y estructuración del modelo para el análisis.
 
-![Modelo de Datos de Qlik](docs/screenshots/data_model_viewer.png)
+### Evolución del modelo de datos
+
+Durante el proceso de modelado se construyeron y evaluaron dos estructuras:
+
+#### 1. Modelo inicial — Esquema en copo de nieve (Snowflake)
+
+La primera versión del modelo organizaba las dimensiones de forma normalizada, dando lugar a un **esquema en copo de nieve**.
+
+![Modelo de datos — Snowflake](docs/screenshots/data_model_snowflake.png)
+
+#### 2. Modelo optimizado — Esquema estrella (Star Schema)
+
+Posteriormente, se revisó la estructura y se optimizó el modelo hacia un **esquema estrella**, simplificando las relaciones entre tablas y la estructura dimensional.
+
+![Modelo de datos — Star Schema](docs/screenshots/data_model_star.png)
+
+La evolución de **Snowflake → Star Schema** forma parte del proceso de aprendizaje y optimización del proyecto. El **modelo estrella constituye la estructura final** del modelo analítico.
 
 ## 🧭 Estructura del badge (5 módulos)
 
@@ -23,7 +39,7 @@ Registrar el proceso de construcción de un modelo de datos en Qlik Sense: desde
 | 1 | Cargando datos (conexión y carga) | ✅ Finalizado |
 | 2 | Transformación de datos | ✅ Finalizado |
 | 3 | Creando el master calendar | ✅ Finalizado |
-| 4 | Estructuración del modelo | ⏳ Pendiente |
+| 4 | Estructuración del modelo | ✅ Finalizado |
 | 5 | Finalización de los datos | ⏳ Pendiente |
 
 ### Módulo 1 — Cargando datos 
@@ -51,6 +67,15 @@ Registrar el proceso de construcción de un modelo de datos en Qlik Sense: desde
 * **Análisis temporal**: Aplicación de la función **`InYearToDate()`** para identificar registros pertenecientes a periodos acumulados dentro del año.
 * **Calendario fiscal**: Generación de atributos fiscales para adaptar el análisis temporal a periodos definidos por el negocio.
 
+### Módulo 4 — Estructuración del modelo
+
+- **Estructuración y optimización del modelo de datos**: análisis de la estructura del modelo para identificar y resolver problemas derivados de relaciones entre tablas y múltiples fuentes de datos.
+- **Problemas de modelado**: comprensión y resolución de **referencias circulares** y **claves sintéticas**, así como de otros problemas derivados de asociaciones no deseadas entre tablas.
+- **Alias de campos**: uso de alias para controlar las asociaciones entre tablas y evitar asociaciones incorrectas o ambiguas.
+- **AutoNumber**: aplicación de `AutoNumber` para generar claves numéricas y reducir el consumo de memoria, mejorando la eficiencia del modelo.
+- **Reducción del modelo de datos**: estudio de diferentes estrategias para transformar modelos complejos en estructuras más simples y eficientes.
+- **Star Schema**: optimización del modelo desde un **esquema en copo de nieve (Snowflake)** hacia un **esquema estrella (Star Schema)**, reduciendo la complejidad de las relaciones y centralizando las asociaciones alrededor de la tabla de hechos.
+- **Técnicas de optimización**: análisis del uso de **joins**, **concatenación** y **cargas de mapeo (Mapping Load)** como mecanismos para simplificar y optimizar el modelo de datos.
 
 ## 📂 Estructura del repositorio
 
