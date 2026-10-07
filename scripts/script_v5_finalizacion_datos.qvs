@@ -305,6 +305,50 @@ FROM categories;
 // FROM shippers;
 
 
+//INTERVALMATCH
+
+//Importamos la tabla de intervalos desde data catalogue
+PriceGroup:
+LOAD
+    "Lower",
+    "Upper",
+    ListPriceGroup
+FROM [$(vFileLocation)ABC_ListPriceGroups.csv]
+(txt, codepage is 28591, embedded labels, delimiter is ',', msq);
+
+// Relacionamos CataloguePrice con el intervalo 
+// al que pertenece usando Lower y Upper. 
+
+// IntervalMatch crea una tabla con las coincidencias.
+IntervalMatch(CataloguePrice)
+
+// Unimos Lower y Upper con PriceGroup 
+// para evitar la Synthetic Key.
+Left Join (PriceGroup)
+Load 
+	"Lower",
+    "Upper"
+Resident PriceGroup;
+
+//eliminamos campos innecesarios 
+Drop Fields Lower, Upper;
+
+// Añadimos ListPriceGroup a la tabla Products 
+// para mantener un modelo tipo Star Schema.
+Left Join (Products)
+//LOAD Distinct evita cargar combinaciones repetidas de CataloguePrice + ListPriceGroup.
+LOAD Distinct
+	CataloguePrice,
+    ListPriceGroup
+Resident PriceGroup;
+
+// Eliminamos PriceGroup porque ya hemos llevado 
+// la información necesaria a Products. 
+// Si mantenemos PriceGroup, puede generar 
+// Synthetic Keys y tablas innecesarias.
+Drop table PriceGroup;
+
+
 
 
 
@@ -475,6 +519,46 @@ FROM [lib://DataFiles/ABC_suppliers.xml]
 
 DROP Fields SupplierID, SupplierBandID;
 
+//Insertamos tabla para usar funcion crosstable
+
+EmployeeSkills:
+Crosstable(ITSkill, HasSkill,1)
+LOAD
+    EmpID as EmployeeID,
+    //"First Name",
+    //"Last Name",
+    "Basic Computer Literacy",
+    "Point of Sale Operations",
+    "Inventory Management",
+    "Email and Messengers",
+    "Internet Navigation",
+    "Data Entry",
+    "Security Awareness",
+    "Printers and Peripherals",
+    "Customer Relationship Management",
+    Troubleshooting
+FROM [lib://DataFiles/ABC_employees_IT_skills.xlsx]
+(ooxml, embedded labels, header is 1 lines, table is SkillsPlanner);
+
+//este campo es redundante asi que lo eliminamos
+Drop Fields HasSkill;
+
+// Insertamos tabla para usar función Hierarchy y HierarchyBelongsTo
+HierarchyPrefixTable:
+Hierarchy(EmployeeID,nodeMgrID,nodeFullName)
+Load
+	EmployeeID,
+    ManagerID as nodeMgrID,
+    FullName as nodeFullName
+Resident Employees;
+
+HierarchyBelongsToTable:
+HierarchyBelongsTo(EmployeeID, hMngrID, EmpFullName, ManagerEmpID, ManagerFullName,DepthDiff)
+Load 
+	EmployeeID,
+    ManagerID as hMngrID,
+    FullName as EmpFullName
+Resident Employees; 
 
 
 ///$tab Master Calendar
@@ -666,3 +750,60 @@ DROP TABLE TempCal;
 
 
 
+
+///$tab Currency
+//Loading Exchange Rates table as an example of Data Island
+ExchangeRates:
+LOAD
+    RateID,
+    BaseCurrency,
+    BaseISO4217,
+    RateTimeStamp,
+    ExchangeRate,
+    QuoteCurrency,
+    QuoteISO4217
+FROM [$(vFileLocation)ABC_ExchangeRates2024.csv]
+(txt, utf8, embedded labels, delimiter is ',', msq);
+
+// SHEET: Exchange Rates
+// Creamos un panel de filtro con el campo QuoteCurrency.
+// El usuario puede seleccionar el tipo de moneda para convertir las ventas.
+
+// En la tabla de Sales:
+// Dimensión: CompanyName
+// Medida: Sum(LineSalesAmount) * ExchangeRate
+//
+// ExchangeRate permite convertir LineSalesAmount
+// según la moneda seleccionada en QuoteCurrency.
+
+
+///$tab QVD Creation
+// Creating a QVD for Master Calendar
+
+//STORE MasterCalendar INTO [$(vFileLocation)MasterCalendar_Out.qvd] (qvd);
+
+// función para  confirmar durante la carga que el Calendar Master se guardará como un archivo QVD
+//TRACE MasterCalendar QVD Exported;
+
+//2do escenario: no conservar todos los campos de una tabla
+// STORE
+
+// CustomerID as CustID,
+
+// CompanyName as CustName,
+
+// DivisionName as Division
+
+// From Customers INTO [$(vFileLocation)CustomerFields_out.qvd] (qvd);
+
+// TRACE Customers QVD Exported;
+///$tab MutliQVD Creation
+//Output Multiple QVD Files using a loop, todas las tablas del modelo en qvd, se usa un bucle con contador
+
+For vCounter=0 to NoOfTables() - 1 // TableName() is zero-based so counter runs from 0
+
+LET vTable=TableName(vCounter);
+
+STORE [$(vTable)] INTO [$(vFileLocation)ABC_$(vTable)_out].qvd; 
+
+NEXT;

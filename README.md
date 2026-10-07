@@ -2,9 +2,21 @@
 
 Repositorio de práctica y documentación de mi recorrido hacia el badge **Qlik Cloud Analyze** (módulo *Data Modeling with Qlik Cloud Analytics*), dentro de la suscripción Qlik Student Learning.
 
+El proyecto documenta la construcción de un modelo de datos en Qlik Cloud Analytics, desde la conexión y transformación de diferentes fuentes hasta la estructuración, optimización y finalización del modelo analítico.
+
 ## 🎯 Objetivo
 
-Registrar el proceso de construcción de un modelo de datos en Qlik Sense: desde la carga y transformación de datos hasta la estructuración del modelo, documentando decisiones técnicas y avances por módulo.
+Registrar el proceso de construcción de un modelo de datos en Qlik Sense, documentando las principales decisiones técnicas, transformaciones y técnicas de modelado y optimización aplicadas durante el learning path.
+
+El proyecto pone especial foco en:
+
+- Carga y transformación de datos mediante **Qlik Script**.
+- Diseño y evolución del **modelo de datos**.
+- Creación de un **Master Calendar**.
+- Identificación y resolución de problemas de asociación.
+- Optimización del modelo mediante diferentes técnicas.
+- Uso de **QVDs** para mejorar el rendimiento.
+- Conceptos de seguridad y técnicas avanzadas de modelado.
 
 ## 🏗️ Arquitectura del modelo
 
@@ -40,7 +52,7 @@ La evolución de **Snowflake → Star Schema** forma parte del proceso de aprend
 | 2 | Transformación de datos | ✅ Finalizado |
 | 3 | Creando el master calendar | ✅ Finalizado |
 | 4 | Estructuración del modelo | ✅ Finalizado |
-| 5 | Finalización de los datos | ⏳ Pendiente |
+| 5 | Finalización de los datos | ✅ Finalizado |
 
 ### Módulo 1 — Cargando datos 
 
@@ -77,18 +89,53 @@ La evolución de **Snowflake → Star Schema** forma parte del proceso de aprend
 - **Star Schema**: optimización del modelo desde un **esquema en copo de nieve (Snowflake)** hacia un **esquema estrella (Star Schema)**, reduciendo la complejidad de las relaciones y centralizando las asociaciones alrededor de la tabla de hechos.
 - **Técnicas de optimización**: análisis del uso de **joins**, **concatenación** y **cargas de mapeo (Mapping Load)** como mecanismos para simplificar y optimizar el modelo de datos.
 
+### Módulo 5 — Finalización de los datos
+
+El último módulo se centró en técnicas para completar y optimizar el modelo de datos después de establecer el esquema estrella.
+
+- **Optimización mediante QVD**: comprensión del uso de archivos QVD como formato nativo de Qlik para mejorar el rendimiento y estructurar procesos de carga por capas.
+- **Acceso a Secciones (Section Access)**: introducción a los conceptos de seguridad y control de acceso a los datos en un entorno Qlik Cloud.
+- **IntervalMatch**: clasificación y asociación de datos según rangos de valores.
+- **Data Islands**: exploración del concepto de tablas desconectadas y sus posibles aplicaciones en modelos analíticos.
+- **Tablas cruzadas (Crosstable)**: manipulación y transformación de estructuras de datos cruzadas para adaptarlas al modelo analítico.
+- **Técnicas avanzadas de modelado**: introducción a funcionalidades y conceptos adicionales para construir modelos de datos más completos y flexibles.
+
+### 📄 Documentación del script
+
+El proyecto incluye un script Qlik estructurado por secciones para la carga, transformación, modelado y optimización de los datos.
+
+👉 [Ver explicación del Qlik Script](docs/qlik-script.txt)
+
 ## 📂 Estructura del repositorio
 
 ```
-/scripts            → scripts exportados del Data Load Editor (se irá actualizando sobre el mismo script)
-/docs/screenshots    → capturas de apoyo (Data Model Viewer, debugger, etc.)
-README.md
+/scripts             → script exportado del Data Load Editor
+/docs/screenshots    → capturas de apoyo (Data Model Viewer)
+/docs                 → notas técnicas
+README.md             → documentación general del proyecto
 .gitignore
 ```
 
+
+
 ## 🛠️ Herramientas
 
-Qlik Sense (Qlik Cloud), Git / GitHub, Git Bash
+- **Qlik Sense / Qlik Cloud**
+- **Qlik Script**
+- **QVD**
+- **SQL**
+- **Git**
+- **GitHub**
+- **Git Bash**
 
 ---
-*Actualizado a medida que avanzo en cada módulo del learning path.*
+
+## 🎓 Resultado
+
+Proyecto completado como parte del learning path **Qlik Cloud Analyze**, incluyendo la construcción, transformación, modelado y optimización de un modelo de datos en Qlik Cloud.
+
+El proyecto refleja la evolución desde un **modelo Snowflake inicial hasta un Star Schema optimizado**, incorporando además técnicas de transformación, gestión temporal, optimización mediante QVD y conceptos avanzados de modelado.
+
+---
+
+*Proyecto desarrollado como parte de mi formación práctica en Qlik Cloud Analytics.*
