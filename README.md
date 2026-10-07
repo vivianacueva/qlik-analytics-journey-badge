@@ -44,7 +44,7 @@ Posteriormente, se revisó la estructura y se optimizó el modelo hacia un **esq
 
 La evolución de **Snowflake → Star Schema** forma parte del proceso de aprendizaje y optimización del proyecto. El **modelo estrella constituye la estructura final** del modelo analítico.
 
-> 📌 **Modelo final:** la versión definitiva del modelo en **Data Model Viewer** se encuentra en [`docs/screenshots/data_model_final.PNG`](docs/screenshots/data_model_final.png).
+> 📌 **Modelo final:** la versión definitiva del modelo en **Data Model Viewer** se encuentra en [`docs/screenshots/data_model_final.PNG`](docs/screenshots/data_model_final.PNG)
 
 ## 🧭 Estructura del badge (5 módulos)
 
